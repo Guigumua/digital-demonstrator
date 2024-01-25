@@ -13,15 +13,17 @@ internal fun expressionBacktrace(
     results: TreeMap<Int, Expression>
 ) {
     if (index == n) {
-        if (stack.last().value <= 0) return
-        results.compute(stack.last().value) { _, v ->
-            if (v == null) {
-                stack.last()
-            } else {
-                if (v.toString().length > stack.last().toString().length) {
-                    stack.last()
-                } else {
-                    v
+        val expression = stack.last()
+        when {
+            expression.value == 0 -> zeroExpression = expression
+            expression.value < 0 -> return
+            else -> {
+                results.compute(expression.value) { _, v ->
+                    if (v == null || v.toString().length > expression.toString().length) {
+                        expression
+                    } else {
+                        v
+                    }
                 }
             }
         }
@@ -174,4 +176,23 @@ internal class BinaryExpression(val left: Expression, val op: Op, val right: Exp
             MUL, DIV -> 2
             EXP -> 3
         }
+}
+
+internal class UnaryExpression(val op: Op, val expression: Expression) : Expression {
+    override val value: Int by lazy(LazyThreadSafetyMode.NONE) { eval() }
+
+    private fun eval(): Int {
+        return when (op) {
+            ADD -> expression.value
+            SUB -> -expression.value
+            else -> throw Exception("Invalid unary operator")
+        }
+    }
+
+    override fun toString(): String {
+        return "$op($expression)"
+    }
+
+    override val precedence: Int
+        get() = Int.MAX_VALUE
 }

@@ -7,8 +7,10 @@ import kotlin.math.pow
 
 
 val table = TreeMap<Int, Expression>()
+var zeroExpression: Expression? = null
 fun main() {
     println("输入base")
+    print("> ")
     val base = readln()
     runCatching {
         base.toInt()
@@ -26,9 +28,20 @@ fun main() {
     }
     while (!Thread.interrupted()) {
         println("输入数字")
+        print("> ")
         val num = readln().toBigInteger()
         runCatching {
-            val expression = demolish(num)
+            val expression =
+                when {
+                    num == BigInteger.ZERO -> zeroExpression ?: BinaryExpression(
+                        table.firstEntry().value,
+                        Op.SUB,
+                        table.firstEntry().value
+                    )
+
+                    num > BigInteger.ZERO -> demolish(num)
+                    else -> UnaryExpression(Op.SUB, demolish(num.negate()))
+                }
             println("${eval(expression)} = $expression")
         }.onFailure {
             println("No solution")
@@ -131,6 +144,13 @@ internal fun eval(expression: Expression): BigInteger {
             Op.MUL -> eval(expression.left) * eval(expression.right)
             Op.DIV -> eval(expression.left) / eval(expression.right)
             Op.EXP -> eval(expression.left).toDouble().pow(eval(expression.right).toDouble()).toInt().toBigInteger()
+        }
+    }
+    if (expression is UnaryExpression) {
+        return when (expression.op) {
+            Op.ADD -> eval(expression.expression)
+            Op.SUB -> eval(expression.expression).negate()
+            else -> throw Exception("Unknown op")
         }
     }
     throw Exception("Unknown expression")
